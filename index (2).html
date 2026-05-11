@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MGM Cultivation — Profit Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Libre+Franklin:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           #0d1a0f;
+    --bg2:          #111f13;
+    --bg3:          #162019;
+    --panel:        #1a2b1d;
+    --panel2:       #1f3323;
+    --border:       #2a4030;
+    --border2:      #3a5545;
+    --gold:         #c9a84c;
+    --gold2:        #e8c97a;
+    --gold-dim:     #7a5e25;
+    --cream:        #f0ead8;
+    --cream2:       #d4ccb5;
+    --cream3:       #8a8070;
+    --green-bright: #5db87a;
+    --green-mid:    #3d8a57;
+    --green-dim:    #1e4a2a;
+    --red:          #c94040;
+    --red-dim:      #3d1515;
+    --orange:       #c97a30;
+    --orange-dim:   #3d2510;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body:    'Libre Franklin', sans-serif;
+    --font-mono:    'DM Mono', 'Courier New', monospace;
+    --radius:       4px;
+    --shadow:       0 4px 24px rgba(0,0,0,0.5);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Noise texture overlay ─────────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.4;
+  }
+
+  /* ── Layout ────────────────────────────────────────────────────────── */
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ── Header ────────────────────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 40px 0 32px;
+    margin-bottom: 40px;
+  }
+  .header-inner { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  .header-title h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    color: var(--cream);
+    line-height: 1;
+  }
+  .header-title h1 span { color: var(--gold); font-style: italic; }
+  .header-title p {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--cream3);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  .header-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+  }
+  .badge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-bright); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .header-badge span { font-family: var(--font-mono); font-size: 11px; color: var(--cream3); letter-spacing: 0.1em; }
+
+  /* ── Section headers ────────────────────────────────────────────────── */
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Input Grid ─────────────────────────────────────────────────────── */
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .input-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .input-panel-header {
+    background: var(--panel2);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .input-panel-header svg { color: var(--gold); flex-shrink: 0; }
+  .input-panel-header h3 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--cream);
+    letter-spacing: 0.02em;
+  }
+  .input-panel-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--cream3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  input[type="number"] {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--gold2);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    padding: 9px 12px;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+  }
+  input[type="number"]:hover { border-color: var(--border2); filter: brightness(1.1); }
+
+  .input-hint {
+    font-size: 10px;
+    color: var(--cream3);
+    font-family: var(--font-mono);
+    opacity: 0.7;
+  }
+
+  /* ── Prior Grower Alert ──────────────────────────────────────────────── */
+  .prior-grower-note {
+    background: linear-gradient(135deg, #2a1f0a, #1f1505);
+    border: 1px solid var(--gold-dim);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 40px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .prior-grower-note .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .prior-grower-note p { font-size: 12px; color: var(--cream2); line-height: 1.6; }
+  .prior-grower-note strong { color: var(--gold2); }
+
+  /* ── Scenario Plant Count Editor ────────────────────────────────────── */
+  .scenario-editor {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .scenario-editor-header {
+    background: var(--panel2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .scenario-editor-header h2 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--cream);
+  }
+  .scenario-editor-header p { font-size: 11px; color: var(--cream3); font-family: var(--font-mono); }
+
+  .scenarios-table-wrap { overflow-x: auto; }
+  table.scenarios-input {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table.scenarios-input thead tr {
+    background: var(--bg3);
+    border-bottom: 2px solid var(--border2);
+  }
+  table.scenarios-input thead th {
+    padding: 10px 14px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cream3);
+    white-space: nowrap;
+    font-weight: 400;
+  }
+  table.scenarios-input thead th:first-child { text-align: left; }
+  table.scenarios-input thead th.col-gh { color: var(--green-bright); }
+  table.scenarios-input thead th.col-out { color: var(--gold); }
+
+  table.scenarios-input tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  table.scenarios-input tbody tr:hover { background: rgba(255,255,255,0.02); }
+  table.scenarios-input tbody tr.prior-row { background: rgba(201,168,76,0.05); }
+
+  table.scenarios-input td {
+    padding: 8px 14px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  table.scenarios-input td:first-child { text-align: left; }
+
+  .scenario-name {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cream);
+    white-space: nowrap;
+  }
+  .scenario-name.prior { color: var(--gold); }
+
+  .scenario-note {
+    font-size: 10px;
+    color: var(--cream3);
+    font-family: var(--font-mono);
+    display: block;
+    margin-top: 2px;
+  }
+
+  .sc-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--cream);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 6px 10px;
+    width: 80px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+  }
+  .sc-input::-webkit-inner-spin-button,
+  .sc-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .sc-input:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,168,76,0.2); }
+  .sc-input.gh-input { color: var(--green-bright); }
+  .sc-input.out-input { color: var(--gold2); }
+
+  .computed-cell {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--cream2);
+  }
+
+  /* ── Results Table ───────────────────────────────────────────────────── */
+  .results-section { margin-bottom: 60px; }
+  .results-table-wrap { overflow-x: auto; }
+
+  table.results {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table.results thead tr.results-meta {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  table.results thead tr.results-meta th {
+    padding: 8px 10px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cream3);
+    text-align: center;
+    font-weight: 400;
+  }
+  table.results thead tr.results-meta th.section-gh { color: var(--green-bright); }
+  table.results thead tr.results-meta th.section-rev { color: #7ab8e8; }
+  table.results thead tr.results-meta th.section-net { color: var(--green-bright); }
+
+  table.results thead tr.results-cols {
+    background: var(--bg3);
+    border-bottom: 2px solid var(--border2);
+  }
+  table.results thead tr.results-cols th {
+    padding: 10px 10px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cream3);
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 400;
+  }
+  table.results thead tr.results-cols th:first-child { text-align: left; color: var(--cream2); }
+
+  table.results tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  table.results tbody tr:hover { background: rgba(255,255,255,0.025); }
+  table.results tbody tr.prior-result-row { background: rgba(201,168,76,0.04); }
+
+  table.results td {
+    padding: 11px 10px;
+    text-align: center;
+    vertical-align: middle;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  table.results td:first-child { text-align: left; padding-left: 16px; }
+
+  .res-scenario-name {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cream);
+    display: block;
+  }
+  .res-scenario-name.prior { color: var(--gold); }
+  .res-scenario-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--cream3);
+    display: block;
+    margin-top: 2px;
+  }
+
+  .money { font-family: var(--font-mono); font-size: 12px; }
+  .money.pos-high { color: var(--green-bright); font-weight: 500; }
+  .money.pos-mid  { color: #7acc8a; }
+  .money.pos-low  { color: var(--orange); }
+  .money.neg      { color: var(--red); }
+
+  /* profit cell backgrounds */
+  td.net-high { background: rgba(93,184,122,0.08); }
+  td.net-mid  { background: rgba(93,184,122,0.04); }
+  td.net-low  { background: rgba(201,122,48,0.06); }
+  td.net-neg  { background: rgba(201,64,64,0.08); }
+
+  /* revenue columns tint */
+  td.rev-col { color: #a0c8e8; }
+
+  /* counts */
+  td.count-col { color: var(--cream2); }
+  td.lbs-col   { color: var(--cream3); font-size: 11px; }
+
+  /* ── Column group separators ─────────────────────────────────────────── */
+  .sep-left { border-left: 1px solid var(--border2) !important; }
+
+  /* ── Footer ─────────────────────────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+    margin-top: 20px;
+  }
+  footer p {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--cream3);
+    letter-spacing: 0.08em;
+    line-height: 1.8;
+  }
+
+  /* ── Tooltips / legend ──────────────────────────────────────────────── */
+  .legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--cream3);
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+  }
+
+  /* ── Reset button ────────────────────────────────────────────────────── */
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--cream3);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-reset:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  /* ── Responsive ─────────────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .inputs-grid { grid-template-columns: 1fr; }
+    .header-inner { flex-direction: column; align-items: flex-start; }
+  }
+
+  /* ── Flash animation when value changes ────────────────────────────── */
+  @keyframes flash-update {
+    0%   { background-color: rgba(201,168,76,0.25); }
+    100% { background-color: transparent; }
+  }
+  .flash { animation: flash-update 0.5s ease-out; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header>
+    <div class="header-inner">
+      <div class="header-title">
+        <h1>MGM <span>Cultivation</span></h1>
+        <p>Profit Scenario Calculator &nbsp;·&nbsp; Greenhouse &amp; Full-Sun Outdoor</p>
+      </div>
+      <div class="header-badge">
+        <div class="badge-dot"></div>
+        <span>Live Calculation</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Global Inputs ──────────────────────────────────────────────────── -->
+  <div class="section-label">Global Assumptions</div>
+
+  <div class="inputs-grid">
+
+    <!-- Pricing: Greenhouse -->
+    <div class="input-panel">
+      <div class="input-panel-header">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <h3>Greenhouse Pricing ($/lb)</h3>
+      </div>
+      <div class="input-panel-body">
+        <div class="field-row">
+          <div class="field">
+            <label>Low Price</label>
+            <input type="number" id="gh_price_low" value="2560" min="0" step="10">
+          </div>
+          <div class="field">
+            <label>Med Price</label>
+            <input type="number" id="gh_price_med" value="3200" min="0" step="10">
+          </div>
+        </div>
+        <div class="field">
+          <label>High Price</label>
+          <input type="number" id="gh_price_high" value="3840" min="0" step="10">
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing: Outdoor -->
+    <div class="input-panel">
+      <div class="input-panel-header">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <h3>Full-Sun Outdoor Pricing ($/lb)</h3>
+      </div>
+      <div class="input-panel-body">
+        <div class="field-row">
+          <div class="field">
+            <label>Low Price</label>
+            <input type="number" id="out_price_low" value="1920" min="0" step="10">
+          </div>
+          <div class="field">
+            <label>Med Price</label>
+            <input type="number" id="out_price_med" value="2460" min="0" step="10">
+          </div>
+        </div>
+        <div class="field">
+          <label>High Price</label>
+          <input type="number" id="out_price_high" value="3200" min="0" step="10">
+        </div>
+      </div>
+    </div>
+
+    <!-- Yield Weights -->
+    <div class="input-panel">
+      <div class="input-panel-header">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v6l4 2"/></svg>
+        <h3>Yield Weights (lbs / plant)</h3>
+      </div>
+      <div class="input-panel-body">
+        <div class="field-row">
+          <div class="field">
+            <label>GH Low Yield</label>
+            <input type="number" id="gh_yield_low" value="0.20" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>GH High Yield</label>
+            <input type="number" id="gh_yield_high" value="0.30" min="0" step="0.01">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Outdoor Low Yield</label>
+            <input type="number" id="out_yield_low" value="0.35" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Outdoor High Yield</label>
+            <input type="number" id="out_yield_high" value="1.25" min="0" step="0.01">
+          </div>
+        </div>
+        <span class="input-hint">GH: controlled environment · Outdoor: full-sun canvas boxes</span>
+      </div>
+    </div>
+
+    <!-- Fixed Expenses -->
+    <div class="input-panel">
+      <div class="input-panel-header">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-4 0v2"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+        <h3>Fixed Annual Expenses</h3>
+      </div>
+      <div class="input-panel-body">
+        <div class="field-row">
+          <div class="field">
+            <label>Operating Expenses ($)</label>
+            <input type="number" id="exp_ops" value="55000" min="0" step="1000">
+          </div>
+          <div class="field">
+            <label>Labor ($)</label>
+            <input type="number" id="exp_labor" value="45000" min="0" step="1000">
+          </div>
+        </div>
+        <div class="field">
+          <label>Total Expenses</label>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-family:var(--font-mono);font-size:14px;color:var(--red);">
+            $<span id="total_expenses_display">100,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /inputs-grid -->
+
+  <!-- ── Prior Grower Note ───────────────────────────────────────────────── -->
+  <div class="prior-grower-note">
+    <div class="icon">⚠</div>
+    <p><strong>Prior Grower Reference:</strong> Previous operator ran <strong>600 GH plants</strong> and <strong>8 plants per canvas box</strong> (408 outdoor plants total across 51 boxes). This density is considered excessive — inadequate airflow and spacing. All proposed scenarios use <strong>500 GH plants</strong> with revised outdoor densities. Prior grower row is shown in the results for comparison.</p>
+  </div>
+
+  <!-- ── Scenario Plant Count Editor ───────────────────────────────────── -->
+  <div class="section-label">Scenario Plant Counts</div>
+
+  <div class="scenario-editor">
+    <div class="scenario-editor-header">
+      <div>
+        <h2>Edit Plant Counts Per Scenario</h2>
+        <p>All fields are editable · Results update instantly</p>
+      </div>
+      <button class="btn-reset" onclick="resetDefaults()">↺ Reset to Defaults</button>
+    </div>
+    <div class="scenarios-table-wrap">
+      <table class="scenarios-input" id="scenarios-input-table">
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th class="col-gh">GH<br>Plants</th>
+            <th class="col-out">Existing<br>Outdoor</th>
+            <th class="col-out">Exp.<br>Boxes</th>
+            <th class="col-out">Plants/<br>Exp. Box</th>
+            <th class="col-out">Exp.<br>Plants</th>
+            <th class="col-out">Total<br>Outdoor</th>
+            <th>Total<br>Plants</th>
+          </tr>
+        </thead>
+        <tbody id="scenarios-input-body">
+          <!-- populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Results ────────────────────────────────────────────────────────── -->
+  <div class="results-section">
+    <div class="section-label">Profit Results</div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(93,184,122,0.5)"></div>Net Profit ≥ $500K</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(93,184,122,0.25)"></div>$200K – $499K</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(201,122,48,0.35)"></div>$0 – $199K</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(201,64,64,0.35)"></div>Loss</div>
+    </div>
+
+    <div class="results-table-wrap">
+      <table class="results" id="results-table">
+        <thead>
+          <tr class="results-meta">
+            <th rowspan="2" style="text-align:left;padding-left:16px">Scenario</th>
+            <th colspan="2" class="section-gh sep-left">Yield (lbs)</th>
+            <th colspan="6" class="section-rev sep-left">Gross Revenue</th>
+            <th colspan="6" class="section-net sep-left">Net Profit (after expenses)</th>
+          </tr>
+          <tr class="results-cols">
+            <th class="sep-left">GH Lo→Hi</th>
+            <th>Out Lo→Hi</th>
+            <th class="sep-left">Low/<br>Low</th>
+            <th>Low/<br>Med</th>
+            <th>Low/<br>High</th>
+            <th>High/<br>Low</th>
+            <th>High/<br>Med</th>
+            <th>High/<br>High</th>
+            <th class="sep-left">Low/<br>Low</th>
+            <th>Low/<br>Med</th>
+            <th>Low/<br>High</th>
+            <th>High/<br>Low</th>
+            <th>High/<br>Med</th>
+            <th>High/<br>High</th>
+          </tr>
+        </thead>
+        <tbody id="results-body">
+          <!-- populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Footer ────────────────────────────────────────────────────────── -->
+  <footer>
+    <p>MGM Cultivation Profit Calculator &nbsp;·&nbsp; Greenhouse: 100′ × 25′ with four 81′ × 4′ planter beds &nbsp;·&nbsp; Outdoor: canvas planter boxes 8′ × 4′</p>
+    <p>Revenue = (GH plants × GH yield × GH price) + (Outdoor plants × Outdoor yield × Outdoor price) &nbsp;·&nbsp; Net Profit = Gross Revenue − Total Fixed Expenses</p>
+    <p>Column headers: Yield range = Low yield / High yield &nbsp;·&nbsp; Revenue & Net Profit columns = Yield tier / Price tier (Low · Med · High)</p>
+  </footer>
+
+</div><!-- /wrap -->
+
+<script>
+// ── Default scenario data ──────────────────────────────────────────────────
+const DEFAULTS = [
+  { id: "prior", name: "Prior Grower",  note: "Reference only", gh: 600, existOut: 408, expBoxes: 0,  plantsPerBox: 0,  isPrior: true  },
+  { id: "s1",    name: "Scenario 1",    note: "25 new boxes @ 3/box",  gh: 500, existOut: 153, expBoxes: 25, plantsPerBox: 3,  isPrior: false },
+  { id: "s2",    name: "Scenario 2",    note: "30 new boxes @ 3/box",  gh: 500, existOut: 153, expBoxes: 30, plantsPerBox: 3,  isPrior: false },
+  { id: "s3",    name: "Scenario 3",    note: "25 new boxes @ 4/box",  gh: 500, existOut: 204, expBoxes: 25, plantsPerBox: 4,  isPrior: false },
+  { id: "s4",    name: "Scenario 4",    note: "30 new boxes @ 4/box",  gh: 500, existOut: 204, expBoxes: 30, plantsPerBox: 4,  isPrior: false },
+  { id: "s5",    name: "Scenario 5",    note: "50 new boxes @ 3/box",  gh: 500, existOut: 153, expBoxes: 50, plantsPerBox: 3,  isPrior: false },
+  { id: "s6",    name: "Scenario 6",    note: "60 new boxes @ 4/box",  gh: 500, existOut: 153, expBoxes: 60, plantsPerBox: 4,  isPrior: false },
+];
+
+// Live state (mutable copy)
+let scenarios = JSON.parse(JSON.stringify(DEFAULTS));
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (n === null || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  const str = '$' + abs.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  return n < 0 ? '(' + str + ')' : str;
+}
+function fmtLbs(n) {
+  return n.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+}
+function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function netClass(n) {
+  if (n >= 500000) return 'pos-high';
+  if (n >= 200000) return 'pos-mid';
+  if (n >= 0)      return 'pos-low';
+  return 'neg';
+}
+function tdNetClass(n) {
+  if (n >= 500000) return 'net-high';
+  if (n >= 200000) return 'net-mid';
+  if (n >= 0)      return 'net-low';
+  return 'net-neg';
+}
+
+// ── Build Scenario Input Table ─────────────────────────────────────────────
+function buildInputTable() {
+  const tbody = document.getElementById('scenarios-input-body');
+  tbody.innerHTML = '';
+  scenarios.forEach((sc, idx) => {
+    const tr = document.createElement('tr');
+    if (sc.isPrior) tr.classList.add('prior-row');
+
+    const expPlants = sc.expBoxes * sc.plantsPerBox;
+    const totalOut  = sc.existOut + expPlants;
+    const totalAll  = sc.gh + totalOut;
+
+    tr.innerHTML = `
+      <td>
+        <span class="scenario-name ${sc.isPrior ? 'prior' : ''}">${sc.name}</span>
+        <span class="scenario-note">${sc.note}</span>
+      </td>
+      <td>
+        <input type="number" class="sc-input gh-input" data-idx="${idx}" data-field="gh"
+          value="${sc.gh}" min="0" step="1" ${sc.isPrior ? '' : ''}>
+      </td>
+      <td>
+        <input type="number" class="sc-input out-input" data-idx="${idx}" data-field="existOut"
+          value="${sc.existOut}" min="0" step="1">
+      </td>
+      <td>
+        <input type="number" class="sc-input out-input" data-idx="${idx}" data-field="expBoxes"
+          value="${sc.expBoxes}" min="0" step="1">
+      </td>
+      <td>
+        <input type="number" class="sc-input out-input" data-idx="${idx}" data-field="plantsPerBox"
+          value="${sc.plantsPerBox}" min="0" step="1">
+      </td>
+      <td class="computed-cell" id="expPlants_${idx}">${expPlants}</td>
+      <td class="computed-cell" id="totalOut_${idx}">${totalOut}</td>
+      <td class="computed-cell" id="totalAll_${idx}">${totalAll}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Bind input events
+  tbody.querySelectorAll('.sc-input').forEach(input => {
+    input.addEventListener('input', e => {
+      const idx   = parseInt(e.target.dataset.idx);
+      const field = e.target.dataset.field;
+      scenarios[idx][field] = parseFloat(e.target.value) || 0;
+      refreshComputedCells(idx);
+      recalcResults();
+    });
+  });
+}
+
+function refreshComputedCells(idx) {
+  const sc = scenarios[idx];
+  const expPlants = sc.expBoxes * sc.plantsPerBox;
+  const totalOut  = sc.existOut + expPlants;
+  const totalAll  = sc.gh + totalOut;
+
+  const flashSet = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = val;
+      el.classList.remove('flash');
+      void el.offsetWidth; // reflow
+      el.classList.add('flash');
+    }
+  };
+  flashSet(`expPlants_${idx}`, expPlants);
+  flashSet(`totalOut_${idx}`, totalOut);
+  flashSet(`totalAll_${idx}`, totalAll);
+}
+
+// ── Build Results Table ────────────────────────────────────────────────────
+function buildResultsTable() {
+  const tbody = document.getElementById('results-body');
+  tbody.innerHTML = '';
+  scenarios.forEach((sc, idx) => {
+    const tr = document.createElement('tr');
+    if (sc.isPrior) tr.classList.add('prior-result-row');
+    tr.id = `result-row-${idx}`;
+    tbody.appendChild(tr);
+  });
+  recalcResults();
+}
+
+function recalcResults() {
+  const ghPriceLow  = val('gh_price_low');
+  const ghPriceMed  = val('gh_price_med');
+  const ghPriceHigh = val('gh_price_high');
+  const outPriceLow  = val('out_price_low');
+  const outPriceMed  = val('out_price_med');
+  const outPriceHigh = val('out_price_high');
+  const ghYieldLow   = val('gh_yield_low');
+  const ghYieldHigh  = val('gh_yield_high');
+  const outYieldLow  = val('out_yield_low');
+  const outYieldHigh = val('out_yield_high');
+  const expenses     = val('exp_ops') + val('exp_labor');
+
+  // Update total expenses display
+  document.getElementById('total_expenses_display').textContent =
+    expenses.toLocaleString('en-US');
+
+  scenarios.forEach((sc, idx) => {
+    const expPlants = sc.expBoxes * sc.plantsPerBox;
+    const totalOut  = sc.existOut + expPlants;
+
+    // Yields
+    const ghLbs_lo  = sc.gh * ghYieldLow;
+    const ghLbs_hi  = sc.gh * ghYieldHigh;
+    const outLbs_lo = totalOut * outYieldLow;
+    const outLbs_hi = totalOut * outYieldHigh;
+
+    // Revenue: 6 combos (yield lo/hi × price lo/med/hi)
+    const R = (gY, oY, gP, oP) => sc.gh * gY * gP + totalOut * oY * oP;
+
+    const rev_ll = R(ghYieldLow,  outYieldLow,  ghPriceLow,  outPriceLow);
+    const rev_lm = R(ghYieldLow,  outYieldLow,  ghPriceMed,  outPriceMed);
+    const rev_lh = R(ghYieldLow,  outYieldLow,  ghPriceHigh, outPriceHigh);
+    const rev_hl = R(ghYieldHigh, outYieldHigh, ghPriceLow,  outPriceLow);
+    const rev_hm = R(ghYieldHigh, outYieldHigh, ghPriceMed,  outPriceMed);
+    const rev_hh = R(ghYieldHigh, outYieldHigh, ghPriceHigh, outPriceHigh);
+
+    const net = r => r - expenses;
+
+    const nets = [net(rev_ll), net(rev_lm), net(rev_lh), net(rev_hl), net(rev_hm), net(rev_hh)];
+
+    const tr = document.getElementById(`result-row-${idx}`);
+    if (!tr) return;
+
+    tr.innerHTML = `
+      <td>
+        <span class="res-scenario-name ${sc.isPrior ? 'prior' : ''}">${sc.name}</span>
+        <span class="res-scenario-sub">GH: ${sc.gh} &nbsp;·&nbsp; Outdoor: ${totalOut}</span>
+      </td>
+      <td class="lbs-col sep-left">${fmtLbs(ghLbs_lo)} → ${fmtLbs(ghLbs_hi)}</td>
+      <td class="lbs-col">${fmtLbs(outLbs_lo)} → ${fmtLbs(outLbs_hi)}</td>
+      <td class="rev-col sep-left">${fmt(rev_ll)}</td>
+      <td class="rev-col">${fmt(rev_lm)}</td>
+      <td class="rev-col">${fmt(rev_lh)}</td>
+      <td class="rev-col">${fmt(rev_hl)}</td>
+      <td class="rev-col">${fmt(rev_hm)}</td>
+      <td class="rev-col">${fmt(rev_hh)}</td>
+      ${nets.map((n, i) => `<td class="${tdNetClass(n)} ${i===0?'sep-left':''}">
+        <span class="money ${netClass(n)}">${fmt(n)}</span>
+      </td>`).join('')}
+    `;
+  });
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+function resetDefaults() {
+  scenarios = JSON.parse(JSON.stringify(DEFAULTS));
+  buildInputTable();
+  recalcResults();
+}
+
+// ── Bind global input changes ──────────────────────────────────────────────
+document.querySelectorAll('input[type="number"]').forEach(input => {
+  if (!input.classList.contains('sc-input')) {
+    input.addEventListener('input', recalcResults);
+  }
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+buildInputTable();
+buildResultsTable();
+</script>
+</body>
+</html>
