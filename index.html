@@ -315,7 +315,7 @@
   }
   table.results thead tr.results-meta th.section-gh { color: var(--green-bright); }
   table.results thead tr.results-meta th.section-rev { color: #7ab8e8; }
-  table.results thead tr.results-meta th.section-net { color: var(--green-bright); }
+  table.results thead tr.results-meta th.section-bulk { color: #e8a87c; }
 
   table.results thead tr.results-cols {
     background: var(--bg3);
@@ -526,7 +526,7 @@
         <div class="field-row">
           <div class="field">
             <label>GH Low Yield</label>
-            <input type="number" id="gh_yield_low" value="0.20" min="0" step="0.01">
+            <input type="number" id="gh_yield_low" value="0.15" min="0" step="0.01">
           </div>
           <div class="field">
             <label>GH High Yield</label>
@@ -574,6 +574,38 @@
     </div>
 
   </div><!-- /inputs-grid -->
+
+  <!-- ── Bulk Sales Panel ───────────────────────────────────────────────────── -->
+  <div class="section-label">Bulk Sales Variable</div>
+
+  <div class="input-panel" style="margin-bottom:24px;max-width:680px;">
+    <div class="input-panel-header">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+      <h3>Bulk Sales (% of Harvest Sold at Wholesale)</h3>
+    </div>
+    <div class="input-panel-body">
+      <p style="font-size:11px;color:var(--cream3);font-family:var(--font-mono);line-height:1.7;margin-bottom:4px;">
+        A portion of the harvest is sold in bulk at a lower wholesale price instead of retail. This reduces retail revenue but adds a separate bulk revenue stream. Net profit columns below show the impact of both the <strong style="color:var(--cream2)">15% bulk</strong> and <strong style="color:var(--cream2)">20% bulk</strong> splits alongside the retail-only baseline.
+      </p>
+      <div class="field-row" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="field">
+          <label>Bulk Low % (of harvest)</label>
+          <input type="number" id="bulk_pct_low" value="15" min="0" max="100" step="1">
+          <span class="input-hint">e.g. 15 = 15%</span>
+        </div>
+        <div class="field">
+          <label>Bulk High % (of harvest)</label>
+          <input type="number" id="bulk_pct_high" value="20" min="0" max="100" step="1">
+          <span class="input-hint">e.g. 20 = 20%</span>
+        </div>
+        <div class="field">
+          <label>Bulk Price ($/lb)</label>
+          <input type="number" id="bulk_price" value="450" min="0" step="10">
+          <span class="input-hint">Wholesale rate</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Prior Grower Note ───────────────────────────────────────────────── -->
   <div class="prior-grower-note">
@@ -630,12 +662,26 @@
           <tr class="results-meta">
             <th rowspan="2" style="text-align:left;padding-left:16px">Scenario</th>
             <th colspan="2" class="section-gh sep-left">Yield (lbs)</th>
-            <th colspan="6" class="section-rev sep-left">Gross Revenue</th>
-            <th colspan="6" class="section-net sep-left">Net Profit (after expenses)</th>
+            <th colspan="6" class="section-rev sep-left">Gross Revenue — Retail Only</th>
+            <th colspan="6" class="section-net sep-left">Net Profit — Retail Only</th>
+            <th colspan="6" class="section-bulk sep-left">Net Profit — w/ 15% Bulk</th>
+            <th colspan="6" class="section-bulk sep-left">Net Profit — w/ 20% Bulk</th>
           </tr>
           <tr class="results-cols">
             <th class="sep-left">GH Lo→Hi</th>
             <th>Out Lo→Hi</th>
+            <th class="sep-left">Low/<br>Low</th>
+            <th>Low/<br>Med</th>
+            <th>Low/<br>High</th>
+            <th>High/<br>Low</th>
+            <th>High/<br>Med</th>
+            <th>High/<br>High</th>
+            <th class="sep-left">Low/<br>Low</th>
+            <th>Low/<br>Med</th>
+            <th>Low/<br>High</th>
+            <th>High/<br>Low</th>
+            <th>High/<br>Med</th>
+            <th>High/<br>High</th>
             <th class="sep-left">Low/<br>Low</th>
             <th>Low/<br>Med</th>
             <th>Low/<br>High</th>
@@ -660,8 +706,9 @@
   <!-- ── Footer ────────────────────────────────────────────────────────── -->
   <footer>
     <p>MGM Cultivation Profit Calculator &nbsp;·&nbsp; Greenhouse: 100′ × 25′ with four 81′ × 4′ planter beds &nbsp;·&nbsp; Outdoor: canvas planter boxes 8′ × 4′</p>
-    <p>Revenue = (GH plants × GH yield × GH price) + (Outdoor plants × Outdoor yield × Outdoor price) &nbsp;·&nbsp; Net Profit = Gross Revenue − Total Fixed Expenses</p>
-    <p>Column headers: Yield range = Low yield / High yield &nbsp;·&nbsp; Revenue & Net Profit columns = Yield tier / Price tier (Low · Med · High)</p>
+    <p>Retail Revenue = (GH plants × GH yield × GH price) + (Outdoor plants × Outdoor yield × Outdoor price) &nbsp;·&nbsp; Net Profit = Gross Revenue − Total Fixed Expenses</p>
+    <p>Bulk columns: the stated % of total harvest lbs is sold at bulk price; remaining lbs sold at retail. Bulk lbs split proportionally between GH and outdoor by their share of total yield.</p>
+    <p>Column headers — Yield tier: Low / High &nbsp;·&nbsp; Price tier: Low / Med / High</p>
   </footer>
 
 </div><!-- /wrap -->
@@ -803,6 +850,9 @@ function recalcResults() {
   const outYieldLow  = val('out_yield_low');
   const outYieldHigh = val('out_yield_high');
   const expenses     = val('exp_ops') + val('exp_labor');
+  const bulkPctLow   = val('bulk_pct_low')  / 100;
+  const bulkPctHigh  = val('bulk_pct_high') / 100;
+  const bulkPrice    = val('bulk_price');
 
   // Update total expenses display
   document.getElementById('total_expenses_display').textContent =
@@ -818,7 +868,7 @@ function recalcResults() {
     const outLbs_lo = totalOut * outYieldLow;
     const outLbs_hi = totalOut * outYieldHigh;
 
-    // Revenue: 6 combos (yield lo/hi × price lo/med/hi)
+    // Retail-only revenue: 6 combos (yield lo/hi × price lo/med/hi)
     const R = (gY, oY, gP, oP) => sc.gh * gY * gP + totalOut * oY * oP;
 
     const rev_ll = R(ghYieldLow,  outYieldLow,  ghPriceLow,  outPriceLow);
@@ -828,9 +878,43 @@ function recalcResults() {
     const rev_hm = R(ghYieldHigh, outYieldHigh, ghPriceMed,  outPriceMed);
     const rev_hh = R(ghYieldHigh, outYieldHigh, ghPriceHigh, outPriceHigh);
 
-    const net = r => r - expenses;
+    // Bulk-adjusted revenue: split harvest into retail% + bulk%
+    // Revenue = (retail_lbs × retail_price) + (bulk_lbs × bulk_price)
+    const RB = (gY, oY, gP, oP, bulkPct) => {
+      const totalLbs = sc.gh * gY + totalOut * oY;
+      const bulkLbs  = totalLbs * bulkPct;
+      const retailLbs = totalLbs - bulkLbs;
+      // Retail lbs split proportionally between GH and outdoor
+      const ghRetailFrac  = (sc.gh * gY) / totalLbs;
+      const outRetailFrac = (totalOut * oY) / totalLbs;
+      const retailRev = (retailLbs * ghRetailFrac * gP) + (retailLbs * outRetailFrac * oP);
+      const bulkRev   = bulkLbs * bulkPrice;
+      return retailRev + bulkRev;
+    };
+
+    const net  = r => r - expenses;
 
     const nets = [net(rev_ll), net(rev_lm), net(rev_lh), net(rev_hl), net(rev_hm), net(rev_hh)];
+
+    // Bulk 15%
+    const nets_b15 = [
+      net(RB(ghYieldLow,  outYieldLow,  ghPriceLow,  outPriceLow,  bulkPctLow)),
+      net(RB(ghYieldLow,  outYieldLow,  ghPriceMed,  outPriceMed,  bulkPctLow)),
+      net(RB(ghYieldLow,  outYieldLow,  ghPriceHigh, outPriceHigh, bulkPctLow)),
+      net(RB(ghYieldHigh, outYieldHigh, ghPriceLow,  outPriceLow,  bulkPctLow)),
+      net(RB(ghYieldHigh, outYieldHigh, ghPriceMed,  outPriceMed,  bulkPctLow)),
+      net(RB(ghYieldHigh, outYieldHigh, ghPriceHigh, outPriceHigh, bulkPctLow)),
+    ];
+
+    // Bulk 20%
+    const nets_b20 = [
+      net(RB(ghYieldLow,  outYieldLow,  ghPriceLow,  outPriceLow,  bulkPctHigh)),
+      net(RB(ghYieldLow,  outYieldLow,  ghPriceMed,  outPriceMed,  bulkPctHigh)),
+      net(RB(ghYieldLow,  outYieldLow,  ghPriceHigh, outPriceHigh, bulkPctHigh)),
+      net(RB(ghYieldHigh, outYieldHigh, ghPriceLow,  outPriceLow,  bulkPctHigh)),
+      net(RB(ghYieldHigh, outYieldHigh, ghPriceMed,  outPriceMed,  bulkPctHigh)),
+      net(RB(ghYieldHigh, outYieldHigh, ghPriceHigh, outPriceHigh, bulkPctHigh)),
+    ];
 
     const tr = document.getElementById(`result-row-${idx}`);
     if (!tr) return;
@@ -856,13 +940,20 @@ function recalcResults() {
           <span class="money ${nc}">${fmt(actualNet)}</span>
           <span style="font-size:10px;color:var(--cream3);display:block;margin-top:2px;">after $${expenses.toLocaleString()} expenses</span>
         </td>
+        <td class="sep-left" colspan="6" style="text-align:center;color:var(--cream3);font-size:10px;font-family:var(--font-mono);">N/A — actual figures used</td>
+        <td class="sep-left" colspan="6" style="text-align:center;color:var(--cream3);font-size:10px;font-family:var(--font-mono);">N/A — actual figures used</td>
       `;
       return;
     }
 
+    const netCells = (arr, firstSep) =>
+      arr.map((n, i) => `<td class="${tdNetClass(n)} ${i===0 && firstSep ? 'sep-left' : ''}">
+        <span class="money ${netClass(n)}">${fmt(n)}</span>
+      </td>`).join('');
+
     tr.innerHTML = `
       <td>
-        <span class="res-scenario-name ${sc.isPrior ? 'prior' : ''}">${sc.name}</span>
+        <span class="res-scenario-name">${sc.name}</span>
         <span class="res-scenario-sub">GH: ${sc.gh} &nbsp;·&nbsp; Outdoor: ${totalOut}</span>
       </td>
       <td class="lbs-col sep-left">${fmtLbs(ghLbs_lo)} → ${fmtLbs(ghLbs_hi)}</td>
@@ -873,10 +964,12 @@ function recalcResults() {
       <td class="rev-col">${fmt(rev_hl)}</td>
       <td class="rev-col">${fmt(rev_hm)}</td>
       <td class="rev-col">${fmt(rev_hh)}</td>
-      ${nets.map((n, i) => `<td class="${tdNetClass(n)} ${i===0?'sep-left':''}">
-        <span class="money ${netClass(n)}">${fmt(n)}</span>
-      </td>`).join('')}
+      ${netCells(nets, true)}
+      ${netCells(nets_b15, true)}
+      ${netCells(nets_b20, true)}
     `;
+  });
+}
   });
 }
 
@@ -893,7 +986,6 @@ document.querySelectorAll('input[type="number"]').forEach(input => {
     input.addEventListener('input', recalcResults);
   }
 });
-
 // ── Init ───────────────────────────────────────────────────────────────────
 buildInputTable();
 buildResultsTable();
