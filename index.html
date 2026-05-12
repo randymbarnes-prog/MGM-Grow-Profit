@@ -578,7 +578,7 @@
   <!-- ── Prior Grower Note ───────────────────────────────────────────────── -->
   <div class="prior-grower-note">
     <div class="icon">⚠</div>
-    <p><strong>Prior Grower Reference:</strong> Previous operator ran <strong>600 GH plants</strong> and <strong>8 plants per canvas box</strong> (408 outdoor plants total across 51 boxes). This density is considered excessive — inadequate airflow and spacing. All proposed scenarios use <strong>500 GH plants</strong> with revised outdoor densities. Prior grower row is shown in the results for comparison.</p>
+    <p><strong>Prior Grower Reference:</strong> Previous operator ran <strong>~1,000 total plants</strong> (600 GH + 408 outdoor across 51 boxes at 8/box). Actual harvest was only <strong>63 lbs total</strong> sold at <strong>$1,920/lb</strong> — yielding <strong>$121,060 gross revenue</strong> and a <strong>net profit of $21,060</strong> after $100K in expenses. Density considered excessive — inadequate airflow and spacing. All proposed scenarios use <strong>500 GH plants</strong> with revised outdoor densities.</p>
   </div>
 
   <!-- ── Scenario Plant Count Editor ───────────────────────────────────── -->
@@ -669,7 +669,7 @@
 <script>
 // ── Default scenario data ──────────────────────────────────────────────────
 const DEFAULTS = [
-  { id: "prior", name: "Prior Grower",  note: "Reference only", gh: 600, existOut: 408, expBoxes: 0,  plantsPerBox: 0,  isPrior: true  },
+  { id: "prior", name: "Prior Grower",  note: "Actual: 63 lbs @ $1,920/lb", gh: 600, existOut: 408, expBoxes: 0,  plantsPerBox: 0,  isPrior: true, actualLbs: 63, actualPrice: 1920  },
   { id: "s1",    name: "Scenario 1",    note: "25 new boxes @ 3/box",  gh: 500, existOut: 153, expBoxes: 25, plantsPerBox: 3,  isPrior: false },
   { id: "s2",    name: "Scenario 2",    note: "30 new boxes @ 3/box",  gh: 500, existOut: 153, expBoxes: 30, plantsPerBox: 3,  isPrior: false },
   { id: "s3",    name: "Scenario 3",    note: "25 new boxes @ 4/box",  gh: 500, existOut: 204, expBoxes: 25, plantsPerBox: 4,  isPrior: false },
@@ -834,6 +834,31 @@ function recalcResults() {
 
     const tr = document.getElementById(`result-row-${idx}`);
     if (!tr) return;
+
+    // Prior grower: use actual harvest figures, not calculated projections
+    if (sc.isPrior && sc.actualLbs !== undefined) {
+      const actualRevenue = sc.actualLbs * sc.actualPrice;
+      const actualNet     = actualRevenue - expenses;
+      const nc = netClass(actualNet);
+      const tc = tdNetClass(actualNet);
+      tr.innerHTML = `
+        <td>
+          <span class="res-scenario-name prior">${sc.name}</span>
+          <span class="res-scenario-sub">~1,000 total plants &nbsp;·&nbsp; Actual harvest only</span>
+        </td>
+        <td class="lbs-col sep-left" colspan="2" style="color:var(--gold);font-style:italic;">
+          Actual: ${sc.actualLbs} lbs total harvested
+        </td>
+        <td class="rev-col sep-left" colspan="6" style="color:var(--gold2);font-style:italic;text-align:center;">
+          Actual gross: ${fmt(actualRevenue)} &nbsp;(${sc.actualLbs} lbs × $${sc.actualPrice.toLocaleString()}/lb)
+        </td>
+        <td class="${tc} sep-left" colspan="6" style="text-align:center;">
+          <span class="money ${nc}">${fmt(actualNet)}</span>
+          <span style="font-size:10px;color:var(--cream3);display:block;margin-top:2px;">after $${expenses.toLocaleString()} expenses</span>
+        </td>
+      `;
+      return;
+    }
 
     tr.innerHTML = `
       <td>
